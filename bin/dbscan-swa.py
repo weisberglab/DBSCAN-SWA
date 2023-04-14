@@ -1,4 +1,5 @@
 import os,re,argparse
+from os.path import dirname, abspath
 import codecs
 import numpy as np
 from sklearn.cluster import DBSCAN
@@ -25,31 +26,6 @@ Usage: DBSCAN-SWA [options]
 --cov <x>                  : Minimal % coverage of hit region on hit prophage region by making blastn(default:30)
 --thread_num <x>           : the number of threads(default:10)
 """
-
-def get_root_path():
-	pathfolders = os.environ['PATH'].split(os.pathsep)
-	pathfolders.reverse()
-	pathfolders.append(os.getcwd())
-	pathfolders.reverse()
-	CURRENTDIR = os.getcwd()
-	root_path = ""
-	for folder in pathfolders:
-		try:
-			if ("dbscan-swa.py" in os.listdir(folder)) and ('makeblastdb' in os.listdir(folder)):
-				root_path = os.path.dirname(folder)
-				break
-		except:
-			pass
-	try:
-		if root_path == "" and os.sep in sys.argv[0] and "dbscan-swa.py" in os.listdir(sys.argv[0].rpartition(os.sep)[0]) and "makeblastdb" in os.listdir(sys.argv[0].rpartition(os.sep)[0]):
-			root_path = os.path.dirname(sys.argv[0].rpartition(os.sep)[0])
-			#os.chdir(root_path)
-	except:
-		pass
-	if root_path == "":
-		print("Error: Please add the DBSCAN-SWA installation directory to your $PATH environment variable before running the executable from another folder.")
-		sys.exit(1)
-	return root_path
 
 def pro_distance(pro1, pro2):
 	pro_list = list(pro1)+list(pro2)
@@ -381,36 +357,31 @@ def GetFaaSequenc(fileName,saveFaaPath,prefix,add_genome_id='no'):   #parse spec
 
 def diamond_blastp(file,outfile,database,format,evalue,diamond_thread_num=20):
 	#num_threads = 20
-	diamond_path = os.path.join(root_path,'software','diamond','diamond') 
-	script = diamond_path+" blastp -d "+database+" -q "+file+" -f "+str(format)+" -e "+str(evalue)+" -o "+outfile+" -p "+str(diamond_thread_num)+" --max-target-seqs 1"
+	script = "diamond blastp -d "+database+" -q "+file+" -f "+str(format)+" -e "+str(evalue)+" -o "+outfile+" -p "+str(diamond_thread_num)+" --max-target-seqs 1"
 	print(script)
 	os.system(script)
 
 def blastp(file,outfile,database,format,evalue):
 	num_threads = 20
-	blastp_path = os.path.join(root_path,'software','blast+','blastp') 
-	script = blastp_path+" -db "+database+" -query "+file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -num_threads "+str(num_threads)+" -max_target_seqs 1"
+	script = "blastp -db "+database+" -query "+file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -num_threads "+str(num_threads)+" -max_target_seqs 1"
 
 	os.system(script)
 
 def blastn(file,outfile,database,format,evalue):
 	num_threads = 20
 	format = 0
-	blastn_path = os.path.join(root_path,'software','blast+','blastn')
-	script = blastn_path+" -db "+database+" -query "+file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -num_threads "+str(num_threads)+" -num_alignments 1 -word_size 11"
+	script = "blastn -db "+database+" -query "+file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -num_threads "+str(num_threads)+" -num_alignments 1 -word_size 11"
 	os.system(script)
 
 def blastn_file(file,outfile,subject_file,format,evalue):
 	num_threads = 20
 	format = 0
-	blastn_path = os.path.join(root_path,'software','blast+','blastn')
-	script = blastn_path+" -subject "+subject_file+" -query "+file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -word_size 11"
+	script = "blastn -subject "+subject_file+" -query "+file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -word_size 11"
 	print(script)
 	os.system(script)
 
 def blastp_file(file,outfile,subject_file,format,evalue):
 	num_threads = 20
-	blastp_path = os.path.join(root_path,'software','blast+','blastp')
 	script = "blastp -subject "+subject_file+" -query "+file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -max_target_seqs 1"
 	os.system(script)
 
@@ -946,8 +917,7 @@ def get_acc(filename):
     return acc
 
 def short_blastn(file1,file2,outfile):
-	blastn_path = os.path.join(root_path,'software','blast+','blastn')
-	command = blastn_path+" -query "+file1+" -subject "+file2+" -out "+outfile+" -task blastn-short -evalue 1000"
+	command = "blastn -query "+file1+" -subject "+file2+" -out "+outfile+" -task blastn-short -evalue 1000"
 	os.system(command)
 
 def identify_att_before(usrfile,resufile,outdir,type,faa_file):
@@ -1312,10 +1282,7 @@ def get_strain_info(file,outdir,prefix):
 	return strain_inf_dict,strain_sequence_dict
 
 def annotate_bacteria_fasta(fasta_file,outdir,prefix,kingdom):
-	prokka_path = os.path.join(root_path,'software','prokka','bin','prokka')
-	if not os.path.exists(prokka_path):
-		prokka_path = "prokka"
-	command = prokka_path+" %s --outdir %s --prefix %s --kingdom %s --force"%(fasta_file,outdir,prefix,kingdom)
+	command = "prokka %s --outdir %s --prefix %s --kingdom %s --force"%(fasta_file,outdir,prefix,kingdom)
 	print(command)
 	os.system(command)
 
@@ -1515,15 +1482,13 @@ def bac_blastn_phagedb(prophage_file,outfile):
 	phage_database = os.path.join(root_path,'db','database','phage_nucl','phage_nucl_db')
 	format = 6
 	evalue = 0.01
-	blastn_path = os.path.join(root_path,'software','blast+','blastn')
-	script = blastn_path+" -db "+phage_database+" -query "+prophage_file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -num_threads 20 -word_size 11 -perc_identity 70 -reward 1 -penalty -2 -gapopen 0 -gapextend 0 -max_target_seqs 1000000"
+	script = "blastn -db "+phage_database+" -query "+prophage_file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -num_threads 20 -word_size 11 -perc_identity 70 -reward 1 -penalty -2 -gapopen 0 -gapextend 0 -max_target_seqs 1000000"
 	os.system(script)
 
 def bac_blastn_phage(prophage_file,phage_file,outfile):
 	format = 6
 	evalue = 0.01
-	blastn_path = os.path.join(root_path,'software','blast+','blastn')
-	command = blastn_path+" -query "+prophage_file+" -subject "+phage_file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -word_size 11 -perc_identity 70 -reward 1 -penalty -2 -gapopen 0 -gapextend 0"
+	command = "blastn -query "+prophage_file+" -subject "+phage_file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile+" -word_size 11 -perc_identity 70 -reward 1 -penalty -2 -gapopen 0 -gapextend 0"
 	print(command)
 	os.system(command)
 
@@ -1533,8 +1498,7 @@ def diamond_blastp_nomax(file,outfile,database):
 	evalue = 1
 	identity = 0.4
 	coverage = 0.7
-	diamond_path = os.path.join(root_path,'software','diamond','diamond')
-	script = diamond_path+" blastp -d "+database+" -q "+file+" -f "+str(format)+" -e "+str(evalue)+" -o "+outfile+" -p "+str(num_threads)+" --id "+str(identity)+" --query-cover "+str(coverage)+" -k 1000000"
+	script = "diamond blastp -d "+database+" -q "+file+" -f "+str(format)+" -e "+str(evalue)+" -o "+outfile+" -p "+str(num_threads)+" --id "+str(identity)+" --query-cover "+str(coverage)+" -k 1000000"
 	os.system(script)
 
 def bac_blastp_phagedb(prophage_file,outfile):
@@ -1547,8 +1511,7 @@ def bac_blastp_phage(prophage_file,phage_file,outfile):
 	num_threads = 20
 	evalue = 0.01
 	format = 6
-	blastp_path = os.path.join(root_path,'software','blast+','blastp')
-	command = blastp_path+" -query "+prophage_file+" -subject "+phage_file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile
+	command = "blastp -query "+prophage_file+" -subject "+phage_file+" -outfmt "+str(format)+" -evalue "+str(evalue)+" -out "+outfile
 	print(command)
 	os.system(command)
 
@@ -2782,8 +2745,7 @@ if __name__=='__main__':
 			print('the protein number of expanding has been set to 6')
 	else:
 		min_protein_num = 6
-	
-	root_path = get_root_path()
+	root_path = dirname(dirname(abspath(__file__)))
 	database = os.path.join(root_path,'db')
 	flag = 0
 	if os.path.exists(database):
